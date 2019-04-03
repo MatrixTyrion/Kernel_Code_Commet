@@ -747,47 +747,50 @@ fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 	int c, cnt = 0, err = 0;
 	unsigned long total_size;
 
+	// info->screen_base:虚拟显存基地址
 	if (!info || ! info->screen_base)
 		return -ENODEV;
 
 	if (info->state != FBINFO_STATE_RUNNING)
 		return -EPERM;
 
+	// 如果有定义，则调用 info->fbops->fb_read
 	if (info->fbops->fb_read)
 		return info->fbops->fb_read(info, buf, count, ppos);
 	
-	total_size = info->screen_size;
+	total_size = info->screen_size;		// 获取屏幕大小
 
 	if (total_size == 0)
-		total_size = info->fix.smem_len;
+		total_size = info->fix.smem_len;	// fb 缓冲区长度
 
-	if (p >= total_size)
+	if (p >= total_size)		// 调整读的偏移位置
 		return 0;
 
 	if (count >= total_size)
-		count = total_size;
+		count = total_size;		// 一次性最多读多少个字节
 
 	if (count + p > total_size)
-		count = total_size - p;
+		count = total_size - p;	// 调整读的位置以及能读多少字节
 
+	// 分配缓冲区，最大分配4K的大小
 	buffer = kmalloc((count > PAGE_SIZE) ? PAGE_SIZE : count,
 			 GFP_KERNEL);
 	if (!buffer)
 		return -ENOMEM;
 
-	src = (u8 __iomem *) (info->screen_base + p);
-
+	src = (u8 __iomem *) (info->screen_base + p);			// 获取显存虚拟基地址
+	
 	if (info->fbops->fb_sync)
 		info->fbops->fb_sync(info);
 
 	while (count) {
-		c  = (count > PAGE_SIZE) ? PAGE_SIZE : count;
+		c  = (count > PAGE_SIZE) ? PAGE_SIZE : count;		// 获取页地址
 		dst = buffer;
-		fb_memcpy_fromfb(dst, src, c);
+		fb_memcpy_fromfb(dst, src, c);		// copy from src to dst/buffer
 		dst += c;
 		src += c;
 
-		if (copy_to_user(buf, buffer, c)) {
+		if (copy_to_user(buf, buffer, c)) {	// copy to user
 			err = -EFAULT;
 			break;
 		}
@@ -1406,8 +1409,8 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
 	 * Ugh. This can be either the frame buffer mapping, or
 	 * if pgoff points past it, the mmio mapping.
 	 */
-	start = info->fix.smem_start;
-	len = info->fix.smem_len;
+	start = info->fix.smem_start;		// 帧缓冲的起始地址，物理地址
+	len = info->fix.smem_len;			// 帧缓冲长度
 	mmio_pgoff = PAGE_ALIGN((start & ~PAGE_MASK) + len) >> PAGE_SHIFT;
 	if (vma->vm_pgoff >= mmio_pgoff) {
 		if (info->var.accel_flags) {
@@ -1429,6 +1432,7 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
 	vma->vm_page_prot = pgprot_decrypted(vma->vm_page_prot);
 	fb_pgprotect(file, vma, start);
 
+	// 正式映射物理内存到用户空间虚拟地址
 	return vm_iomap_memory(vma, start, len);
 }
 
@@ -1437,11 +1441,11 @@ fb_open(struct inode *inode, struct file *file)
 __acquires(&info->lock)
 __releases(&info->lock)
 {
-	int fbidx = iminor(inode);
+	int fbidx = iminor(inode);		// 获取节点次设备号
 	struct fb_info *info;
 	int res = 0;
 
-	info = get_fb_info(fbidx);
+	info = get_fb_info(fbidx);		// 通过次设备号，获取 fb_info
 	if (!info) {
 		request_module("fb%d", fbidx);
 		info = get_fb_info(fbidx);
@@ -1458,7 +1462,7 @@ __releases(&info->lock)
 	}
 	file->private_data = info;
 	if (info->fbops->fb_open) {
-		res = info->fbops->fb_open(info,1);
+		res = info->fbops->fb_open(info,1);		// 调用相应设备的 fb_open 操作
 		if (res)
 			module_put(info->fbops->owner);
 	}
@@ -1644,7 +1648,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 		return -ENXIO;
 
 	num_registered_fb++;
-	for (i = 0 ; i < FB_MAX; i++)
+	for (i = 0 ; i < FB_MAX; i++)		// 查找空数组
 		if (!registered_fb[i])
 			break;
 	fb_info->node = i;
@@ -1652,6 +1656,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	mutex_init(&fb_info->lock);
 	mutex_init(&fb_info->mm_lock);
 
+	// 在 class 下创建设备
 	fb_info->dev = device_create(fb_class, fb_info->device,
 				     MKDEV(FB_MAJOR, i), NULL, "fb%d", i);
 	if (IS_ERR(fb_info->dev)) {
@@ -1659,6 +1664,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 		printk(KERN_WARNING "Unable to create device for framebuffer %d; errno = %ld\n", i, PTR_ERR(fb_info->dev));
 		fb_info->dev = NULL;
 	} else
+		// 创建设备文件 /dev/fbn
 		fb_init_device(fb_info);
 
 	if (fb_info->pixmap.addr == NULL) {
@@ -1689,6 +1695,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 
 	fb_var_to_videomode(&mode, &fb_info->var);
 	fb_add_videomode(&mode, &fb_info->modelist);
+	// 将 fb_info 添加到 registered_fb 中
 	registered_fb[i] = fb_info;
 
 	event.info = fb_info;
@@ -1902,12 +1909,14 @@ fbmem_init(void)
 	if (!proc_create_seq("fb", 0, NULL, &proc_fb_seq_ops))
 		return -ENOMEM;
 
+	// 创建字符设备
 	ret = register_chrdev(FB_MAJOR, "fb", &fb_fops);
 	if (ret) {
 		printk("unable to get major %d for fb devs\n", FB_MAJOR);
 		goto err_chrdev;
 	}
 
+	// 创建类，但是没有创建设备节点
 	fb_class = class_create(THIS_MODULE, "graphics");
 	if (IS_ERR(fb_class)) {
 		ret = PTR_ERR(fb_class);
@@ -1916,6 +1925,7 @@ fbmem_init(void)
 		goto err_class;
 	}
 
+	// fbcon
 	fb_console_init();
 
 	return 0;

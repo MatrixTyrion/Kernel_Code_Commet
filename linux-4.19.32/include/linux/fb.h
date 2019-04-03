@@ -269,12 +269,15 @@ struct fb_ops {
 
 	/* checks var and eventually tweaks it to something supported,
 	 * DO NOT MODIFY PAR */
+	// 检查可变参数，并进行设置
 	int (*fb_check_var)(struct fb_var_screeninfo *var, struct fb_info *info);
 
 	/* set the video mode according to info->var */
+	// 根据设置的值进行更新，根据 info->var
 	int (*fb_set_par)(struct fb_info *info);
 
 	/* set color register */
+	// 设置颜色寄存器
 	int (*fb_setcolreg)(unsigned regno, unsigned red, unsigned green,
 			    unsigned blue, unsigned transp, struct fb_info *info);
 
@@ -282,16 +285,20 @@ struct fb_ops {
 	int (*fb_setcmap)(struct fb_cmap *cmap, struct fb_info *info);
 
 	/* blank display */
+	// 显示空白
 	int (*fb_blank)(int blank, struct fb_info *info);
 
 	/* pan display */
 	int (*fb_pan_display)(struct fb_var_screeninfo *var, struct fb_info *info);
 
 	/* Draws a rectangle */
+	// 矩阵填充 need!!!
 	void (*fb_fillrect) (struct fb_info *info, const struct fb_fillrect *rect);
 	/* Copy data from area to another */
+	// 数据拷贝 need!!!
 	void (*fb_copyarea) (struct fb_info *info, const struct fb_copyarea *region);
 	/* Draws a image to the display */
+	// 图像填充 need!!!
 	void (*fb_imageblit) (struct fb_info *info, const struct fb_image *image);
 
 	/* Draws cursor */
@@ -473,12 +480,17 @@ struct fb_info {
 	struct mutex lock;		/* Lock for open/release/ioctl funcs */
 	struct mutex mm_lock;		/* Lock for fb_mmap and smem_* fields */
 	struct fb_var_screeninfo var;	/* Current var */
+	// LCD 可变参数结构体
 	struct fb_fix_screeninfo fix;	/* Current fix */
+	// LCD 固定参数结构体
 	struct fb_monspecs monspecs;	/* Current Monitor specs */
+	// LCD 显示器标准
 	struct work_struct queue;	/* Framebuffer event queue */
+	// 帧缓冲事件队列
 	struct fb_pixmap pixmap;	/* Image hardware mapper */
 	struct fb_pixmap sprite;	/* Cursor hardware mapper */
 	struct fb_cmap cmap;		/* Current cmap */
+	// 当前颜色表
 	struct list_head modelist;      /* mode list */
 	struct fb_videomode *mode;	/* current mode */
 
@@ -487,6 +499,7 @@ struct fb_info {
 	/* set before framebuffer registration, 
 	   remove after unregister */
 	struct backlight_device *bl_dev;
+	// 对应背光设备
 
 	/* Backlight level curve */
 	struct mutex bl_curve_mutex;	
@@ -497,16 +510,19 @@ struct fb_info {
 	struct fb_deferred_io *fbdefio;
 #endif
 
-	struct fb_ops *fbops;
+	struct fb_ops *fbops;	// 对底层硬件操作的函数指针
 	struct device *device;		/* This is the parent */
 	struct device *dev;		/* This is this fb device */
+	// FB 设备
 	int class_flag;                    /* private sysfs flags */
 #ifdef CONFIG_FB_TILEBLITTING
 	struct fb_tile_ops *tileops;    /* Tile Blitting */
 #endif
 	union {
 		char __iomem *screen_base;	/* Virtual address */
+		// 虚拟基地址
 		char *screen_buffer;
+		// LCD IO 映射的虚拟内存的大小
 	};
 	unsigned long screen_size;	/* Amount of ioremapped VRAM or 0 */ 
 	void *pseudo_palette;		/* Fake palette of 16 colors */ 

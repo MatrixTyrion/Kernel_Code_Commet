@@ -833,6 +833,8 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 	int size;
 	u32 lcdcon1;
 
+	// 获取 LCD 的设备信息 &s3c_device_lcd->dev->platform_data
+	// s3c24xx_fb_set_platdata(&smdk2440_fb_info);
 	mach_info = dev_get_platdata(&pdev->dev);
 	if (mach_info == NULL) {
 		dev_err(&pdev->dev,
@@ -845,40 +847,50 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 			mach_info->default_display, mach_info->num_displays);
 		return -EINVAL;
 	}
-
+	// 指向 smdk2440_lcd_cfg smdk2440_fb_info->displays
 	display = mach_info->displays + mach_info->default_display;
 
+	// 获取 LCD 中断号 &s3c_device_lcd->resource[1]
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_err(&pdev->dev, "no irq for device\n");
 		return -ENOENT;
 	}
 
+	// 分配一个 fb_info 结构
+	// 第一个参数不为零，表示申请额外的空间，用来存放数据
 	fbinfo = framebuffer_alloc(sizeof(struct s3c2410fb_info), &pdev->dev);
 	if (!fbinfo)
 		return -ENOMEM;
 
+	// &s3c_device_lcd->dev->driver_data = fb_info
 	platform_set_drvdata(pdev, fbinfo);
 
 	info = fbinfo->par;
 	info->dev = &pdev->dev;
 	info->drv_type = drv_type;
 
+	// 获取 memory 资源信息
+	// 获取 LCD 平台设备所使用的 IO 端口资源
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (res == NULL) {
 		dev_err(&pdev->dev, "failed to get memory registers\n");
 		ret = -ENXIO;
 		goto dealloc_fb;
 	}
-
+	// 申请 IO mem 资源，并进行映射
 	size = resource_size(res);
+	// 申请 LCD IO 端口所占用的 IO 空间
+	// 注意理解IO空间和内存空间的区别
 	info->mem = request_mem_region(res->start, size, pdev->name);
 	if (info->mem == NULL) {
 		dev_err(&pdev->dev, "failed to get memory region\n");
 		ret = -ENOENT;
 		goto dealloc_fb;
 	}
-
+	/* 将LCD的IO端口占用的这段IO空间映射到内存的虚拟地址
+	 * 注意：IO空间要映射后才能使用，以后对虚拟地址的操作就是对IO空间的操作
+	 */
 	info->io = ioremap(res->start, size);
 	if (info->io == NULL) {
 		dev_err(&pdev->dev, "ioremap() of registers failed\n");
@@ -917,21 +929,21 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 
 	for (i = 0; i < 256; i++)
 		info->palette_buffer[i] = PALETTE_BUFF_CLEAR;
-
+	// 申请中断
 	ret = request_irq(irq, s3c2410fb_irq, 0, pdev->name, info);
 	if (ret) {
 		dev_err(&pdev->dev, "cannot get irq %d - err %d\n", irq, ret);
 		ret = -EBUSY;
 		goto release_regs;
 	}
-
+	// 获取时钟
 	info->clk = clk_get(NULL, "lcd");
 	if (IS_ERR(info->clk)) {
 		dev_err(&pdev->dev, "failed to get lcd clock source\n");
 		ret = PTR_ERR(info->clk);
 		goto release_irq;
 	}
-
+	// 使能时钟
 	clk_prepare_enable(info->clk);
 	dprintk("got and enabled clock\n");
 
@@ -951,6 +963,7 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 	}
 
 	/* Initialize video memory */
+	// Allocates the DRAM memory for the frame buffer
 	ret = s3c2410fb_map_video_memory(fbinfo);
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to allocate video RAM: %d\n", ret);
@@ -963,7 +976,7 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 	fbinfo->var.xres = display->xres;
 	fbinfo->var.yres = display->yres;
 	fbinfo->var.bits_per_pixel = display->bpp;
-
+	// 设置寄存器，配置引脚
 	s3c2410fb_init_registers(fbinfo);
 
 	s3c2410fb_check_var(&fbinfo->var, fbinfo);
@@ -973,7 +986,7 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 		dev_err(&pdev->dev, "Failed to register cpufreq\n");
 		goto free_video_memory;
 	}
-
+	// 注册一个 fb_info 结构
 	ret = register_framebuffer(fbinfo);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to register framebuffer device: %d\n",

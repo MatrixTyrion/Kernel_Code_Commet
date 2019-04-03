@@ -156,8 +156,10 @@
 
 struct fb_fix_screeninfo {
 	char id[16];			/* identification string eg "TT Builtin" */
+	// 帧缓冲缓存的起始地址
 	unsigned long smem_start;	/* Start of frame buffer mem */
-					/* (physical address) */
+								/* (physical address) */
+	// 缓冲的长度
 	__u32 smem_len;			/* Length of frame buffer mem */
 	__u32 type;			/* see FB_TYPE_*		*/
 	__u32 type_aux;			/* Interleave for interleaved Planes */
@@ -165,9 +167,12 @@ struct fb_fix_screeninfo {
 	__u16 xpanstep;			/* zero if no hardware panning  */
 	__u16 ypanstep;			/* zero if no hardware panning  */
 	__u16 ywrapstep;		/* zero if no hardware ywrap    */
+	// 一行的字节数
 	__u32 line_length;		/* length of a line in bytes    */
+	// 内存映射的开始地址
 	unsigned long mmio_start;	/* Start of Memory Mapped I/O   */
-					/* (physical address) */
+								/* (physical address) */
+	// 内存映射的长度
 	__u32 mmio_len;			/* Length of Memory Mapped I/O  */
 	__u32 accel;			/* Indicate to driver which	*/
 					/*  specific chip/card we have	*/
@@ -239,16 +244,21 @@ struct fb_bitfield {
 #define KHZ2PICOS(a) (1000000000UL/(a))
 
 struct fb_var_screeninfo {
-	__u32 xres;			/* visible resolution		*/
-	__u32 yres;
-	__u32 xres_virtual;		/* virtual resolution		*/
-	__u32 yres_virtual;
-	__u32 xoffset;			/* offset from virtual to visible */
-	__u32 yoffset;			/* resolution			*/
+	/* visible resolution		*/
+	__u32 xres;				// 可见屏幕一行有多少个像素点 | 水平分辨率
+	__u32 yres;				// 可见屏幕一列有多少个像素点 | 垂直分辨率
+	/* virtual resolution		*/
+	__u32 xres_virtual;		// 虚拟屏幕一行有多少个像素点 | 虚拟水平分辨率
+	__u32 yres_virtual;		// 虚拟屏幕一列有多少个像素点 | 虚拟垂直分辨率
+	/* offset from virtual to visible resolution */
+	__u32 xoffset;			// 虚拟到可见屏幕之间的行偏移
+	__u32 yoffset;			// 虚拟到可见屏幕之间的列偏移
 
-	__u32 bits_per_pixel;		/* guess what			*/
+	__u32 bits_per_pixel;	// 每个像素由多少个位组成
 	__u32 grayscale;		/* 0 = color, 1 = grayscale,	*/
-					/* >1 = FOURCC			*/
+							/* >1 = FOURCC					*/
+
+	// FB 缓存的 RGB 位域						
 	struct fb_bitfield red;		/* bitfield in fb mem if true color, */
 	struct fb_bitfield green;	/* else only length is significant */
 	struct fb_bitfield blue;
@@ -258,19 +268,28 @@ struct fb_var_screeninfo {
 
 	__u32 activate;			/* see FB_ACTIVATE_*		*/
 
+	// 高度 & 宽度
 	__u32 height;			/* height of picture in mm    */
 	__u32 width;			/* width of picture in mm     */
 
 	__u32 accel_flags;		/* (OBSOLETE) see fb_info.flags */
 
 	/* Timing: All values in pixclocks, except pixclock (of course) */
+	// 时间选择：除了 '像素时钟' 外，所有值都以像素时钟为单位
 	__u32 pixclock;			/* pixel clock in ps (pico seconds) */
+	// 像素时钟，pico second，皮秒
 	__u32 left_margin;		/* time from sync to picture	*/
+	// 行切换，从同步到绘图的延迟
 	__u32 right_margin;		/* time from picture to sync	*/
+	// 行切换，从绘图到同步的延迟
 	__u32 upper_margin;		/* time from sync to picture	*/
+	// 帧切换，从同步到绘图之间的延迟
 	__u32 lower_margin;
+	// 帧切换，从绘图到同步之间的延迟
 	__u32 hsync_len;		/* length of horizontal sync	*/
+	// 水平同步的长度
 	__u32 vsync_len;		/* length of vertical sync	*/
+	// 垂直同步的长度
 	__u32 sync;			/* see FB_SYNC_*		*/
 	__u32 vmode;			/* see FB_VMODE_*		*/
 	__u32 rotate;			/* angle we rotate counter clockwise */

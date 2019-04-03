@@ -613,14 +613,14 @@ void __init samsung_keypad_set_platdata(struct samsung_keypad_platdata *pd)
 
 #ifdef CONFIG_PLAT_S3C24XX
 static struct resource s3c_lcd_resource[] = {
-	[0] = DEFINE_RES_MEM(S3C24XX_PA_LCD, S3C24XX_SZ_LCD),
+	[0] = DEFINE_RES_MEM(S3C24XX_PA_LCD, S3C24XX_SZ_LCD), // 寄存器的起始地址，和长度
 	[1] = DEFINE_RES_IRQ(IRQ_LCD),
 };
 
 struct platform_device s3c_device_lcd = {
 	.name		= "s3c2410-lcd",
 	.id		= -1,
-	.num_resources	= ARRAY_SIZE(s3c_lcd_resource),
+	.num_resources	= ARRAY_SIZE(s3c_lcd_resource),		// 资源数量
 	.resource	= s3c_lcd_resource,
 	.dev		= {
 		.dma_mask		= &samsung_device_dma_mask,
