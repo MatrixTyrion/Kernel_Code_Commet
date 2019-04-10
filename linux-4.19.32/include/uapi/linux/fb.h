@@ -161,7 +161,7 @@ struct fb_fix_screeninfo {
 								/* (physical address) */
 	// »º³åµÄ³¤¶È
 	__u32 smem_len;			/* Length of frame buffer mem */
-	__u32 type;			/* see FB_TYPE_*		*/
+	__u32 type;				/* see FB_TYPE_*		*/
 	__u32 type_aux;			/* Interleave for interleaved Planes */
 	__u32 visual;			/* see FB_VISUAL_*		*/ 
 	__u16 xpanstep;			/* zero if no hardware panning  */
