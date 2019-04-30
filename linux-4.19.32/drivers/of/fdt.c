@@ -461,12 +461,14 @@ void *__unflatten_device_tree(const void *blob,
 	pr_debug("size: %08x\n", fdt_totalsize(blob));
 	pr_debug("version: %08x\n", fdt_version(blob));
 
+	// 检查设备树 magic number
 	if (fdt_check_header(blob)) {
 		pr_err("Invalid device tree blob header\n");
 		return NULL;
 	}
 
 	/* First pass, scan for size */
+	// 第一次传入，mem 和 nodepp 传入 0，实际上是为了计算整个书背书所要的空间
 	size = unflatten_dt_nodes(blob, NULL, dad, NULL);
 	if (size < 0)
 		return NULL;
@@ -475,6 +477,7 @@ void *__unflatten_device_tree(const void *blob,
 	pr_debug("  size is %d, allocating...\n", size);
 
 	/* Allocate memory for the expanded device tree */
+	// 为设备树分配内存空间
 	mem = dt_alloc(size + 4, __alignof__(struct device_node));
 	if (!mem)
 		return NULL;
@@ -1212,7 +1215,7 @@ bool __init early_init_dt_verify(void *params)
 		return false;
 
 	/* Setup flat device-tree pointer */
-	initial_boot_params = params;
+	initial_boot_params = params;	// 设备树地址 虚拟地址
 	of_fdt_crc32 = crc32_be(~0, initial_boot_params,
 				fdt_totalsize(initial_boot_params));
 	return true;
@@ -1253,11 +1256,14 @@ bool __init early_init_dt_scan(void *params)
  */
 void __init unflatten_device_tree(void)
 {
+	// 解析设备树，将所有设备节点链入全局链表 of_root 中
 	__unflatten_device_tree(initial_boot_params, NULL, &of_root,
 				early_init_dt_alloc_memory_arch, false);
 
 	/* Get pointer to "/chosen" and "/aliases" nodes for use everywhere */
 	of_alias_scan(early_init_dt_alloc_memory_arch);
+	// 获取 /chosen
+	// 遍历 '/aliases' 节点下的所有属性，挂入相应链表中
 
 	unittest_unflatten_overlay_base();
 }

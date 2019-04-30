@@ -29,12 +29,12 @@ typedef u32 phandle;
 typedef u32 ihandle;
 
 struct property {
-	char	*name;
-	int	length;
-	void	*value;
-	struct property *next;
+	char	*name;		// 属性名
+	int	length;			// 属性值长度
+	void	*value;		// 属性值
+	struct property *next;	// 指向下一个属性
 #if defined(CONFIG_OF_DYNAMIC) || defined(CONFIG_SPARC)
-	unsigned long _flags;
+	unsigned long _flags;		// 标志
 #endif
 #if defined(CONFIG_OF_PROMTREE)
 	unsigned int unique_id;
@@ -49,17 +49,17 @@ struct of_irq_controller;
 #endif
 
 struct device_node {
-	const char *name;
-	const char *type;
+	const char *name;		// 设备名称
+	const char *type;		// 设备类型
 	phandle phandle;
-	const char *full_name;
+	const char *full_name;	// 设备全称
 	struct fwnode_handle fwnode;
 
-	struct	property *properties;
+	struct	property *properties;	// 设备属性链表
 	struct	property *deadprops;	/* removed properties */
-	struct	device_node *parent;
-	struct	device_node *child;
-	struct	device_node *sibling;
+	struct	device_node *parent;	// 父节点
+	struct	device_node *child;		// 子节点
+	struct	device_node *sibling;	// 兄弟节点
 #if defined(CONFIG_OF_KOBJ)
 	struct	kobject kobj;
 #endif
