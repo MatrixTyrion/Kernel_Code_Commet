@@ -2924,7 +2924,7 @@ static int tty_cdev_add(struct tty_driver *driver, dev_t dev,
  *
  *	Locking: ??
  */
-
+// 注册 tty 设备
 struct device *tty_register_device(struct tty_driver *driver, unsigned index,
 				   struct device *device)
 {
@@ -3038,7 +3038,7 @@ EXPORT_SYMBOL_GPL(tty_register_device_attr);
  *
  *	Locking: ??
  */
-
+// 注销 tty 设备
 void tty_unregister_device(struct tty_driver *driver, unsigned index)
 {
 	device_destroy(tty_class,
@@ -3150,6 +3150,7 @@ void tty_driver_kref_put(struct tty_driver *driver)
 }
 EXPORT_SYMBOL(tty_driver_kref_put);
 
+// 设置 tty_driver 的操作函数
 void tty_set_operations(struct tty_driver *driver,
 			const struct tty_operations *op)
 {
@@ -3166,6 +3167,8 @@ EXPORT_SYMBOL(put_tty_driver);
 /*
  * Called by a tty driver to register itself.
  */
+// 注册 tty 驱动
+// tty驱动的本质是一个字符设备
 int tty_register_driver(struct tty_driver *driver)
 {
 	int error;
@@ -3228,6 +3231,7 @@ EXPORT_SYMBOL(tty_register_driver);
 /*
  * Called by a tty driver to unregister itself.
  */
+// 注销 TTY 驱动
 int tty_unregister_driver(struct tty_driver *driver)
 {
 #if 0

@@ -56,6 +56,7 @@ struct device_node {
 	struct fwnode_handle fwnode;
 
 	struct	property *properties;	// 设备属性链表
+									// 指向该节点下的第一个属性
 	struct	property *deadprops;	/* removed properties */
 	struct	device_node *parent;	// 父节点
 	struct	device_node *child;		// 子节点

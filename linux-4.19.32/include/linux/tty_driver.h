@@ -298,12 +298,18 @@ struct tty_operations {
 
 struct tty_driver {
 	int	magic;		/* magic number for this structure */
+					// TTY_DRIVER_MAGIC
+					// alloc_tty_driver() 中设置
 	struct kref kref;	/* Reference management */
-	struct cdev **cdevs;
+	struct cdev **cdevs;		// 对应的字符设备
 	struct module	*owner;
 	const char	*driver_name;
 	const char	*name;
 	int	name_base;	/* offset of printed name */
+
+	// major：主设备号
+	// minor_start：开始次设备号
+	// num：设备熟料
 	int	major;		/* major device number */
 	int	minor_start;	/* start of minor device number */
 	unsigned int	num;	/* number of devices allocated */
@@ -349,6 +355,7 @@ extern void tty_driver_kref_put(struct tty_driver *driver);
  * DEPRECATED Do not use this in new code, use tty_alloc_driver instead.
  * (And change the return value checks.)
  */
+// 分配 tty 驱动
 static inline struct tty_driver *alloc_tty_driver(unsigned int lines)
 {
 	struct tty_driver *ret = tty_alloc_driver(lines, 0);

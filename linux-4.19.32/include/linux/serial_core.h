@@ -47,19 +47,19 @@ struct device;
  * physical hardware.  See Documentation/serial/driver for details.
  */
 struct uart_ops {
-	unsigned int	(*tx_empty)(struct uart_port *);
-	void		(*set_mctrl)(struct uart_port *, unsigned int mctrl);
-	unsigned int	(*get_mctrl)(struct uart_port *);
-	void		(*stop_tx)(struct uart_port *);
-	void		(*start_tx)(struct uart_port *);
+	unsigned int	(*tx_empty)(struct uart_port *);	// 判断串口的 Tx FIFO 缓存是否为空
+	void		(*set_mctrl)(struct uart_port *, unsigned int mctrl);	// 设置串口modem控制
+	unsigned int	(*get_mctrl)(struct uart_port *);		// 获取串口modem控制
+	void		(*stop_tx)(struct uart_port *);				// 禁止串口发送数据
+	void		(*start_tx)(struct uart_port *);			// 使能串口发送数据
 	void		(*throttle)(struct uart_port *);
 	void		(*unthrottle)(struct uart_port *);
-	void		(*send_xchar)(struct uart_port *, char ch);
-	void		(*stop_rx)(struct uart_port *);
-	void		(*enable_ms)(struct uart_port *);
-	void		(*break_ctl)(struct uart_port *, int ctl);
-	int		(*startup)(struct uart_port *);
-	void		(*shutdown)(struct uart_port *);
+	void		(*send_xchar)(struct uart_port *, char ch);		// 发送 xChar
+	void		(*stop_rx)(struct uart_port *);					// 禁止串口接收数据
+	void		(*enable_ms)(struct uart_port *);				// 使能 modem 的状态信号
+	void		(*break_ctl)(struct uart_port *, int ctl);		// 设置 break 信号
+	int		(*startup)(struct uart_port *);			// 启动串口，应用程序打开串口设备文件时，该函数会被调用
+	void		(*shutdown)(struct uart_port *);	// 关闭串口，应用程序关闭串口设备文件时，该函数会被调用	
 	void		(*flush_buffer)(struct uart_port *);
 	void		(*set_termios)(struct uart_port *, struct ktermios *new,
 				       struct ktermios *old);
@@ -76,16 +76,16 @@ struct uart_ops {
 	 * Release IO and memory resources used by the port.
 	 * This includes iounmap if necessary.
 	 */
-	void		(*release_port)(struct uart_port *);
-
+	void		(*release_port)(struct uart_port *);	// 释放串口已申请的IO端口/IO内存资源
+														// 必须时还需调用 iounmap()
 	/*
 	 * Request IO and memory resources used by the port.
 	 * This includes iomapping the port if necessary.
 	 */
-	int		(*request_port)(struct uart_port *);
-	void		(*config_port)(struct uart_port *, int);
-	int		(*verify_port)(struct uart_port *, struct serial_struct *);
-	int		(*ioctl)(struct uart_port *, unsigned int, unsigned long);
+	int		(*request_port)(struct uart_port *);		// 申请必要的IO端口/IO内存资源，必要时还可以重新映射串口端口
+	void		(*config_port)(struct uart_port *, int);	// 执行串口所需的自动配置
+	int		(*verify_port)(struct uart_port *, struct serial_struct *);		// 核实新串口的信息
+	int		(*ioctl)(struct uart_port *, unsigned int, unsigned long);		// IO控制
 #ifdef CONFIG_CONSOLE_POLL
 	int		(*poll_init)(struct uart_port *);
 	void		(*poll_put_char)(struct uart_port *, unsigned char);
@@ -116,8 +116,11 @@ typedef unsigned int __bitwise upstat_t;
 
 struct uart_port {
 	spinlock_t		lock;			/* port lock */
-	unsigned long		iobase;			/* in/out[bwl] */
+									// 串口端口锁
+	unsigned long	iobase;			/* in/out[bwl] */
+									// IO 端口基地址
 	unsigned char __iomem	*membase;		/* read/write[bwl] */
+											// IO内存基地址，经映射后的IO内存虚拟基地址，如 ioremap
 	unsigned int		(*serial_in)(struct uart_port *, int);
 	void			(*serial_out)(struct uart_port *, int, int);
 	void			(*set_termios)(struct uart_port *,
@@ -144,13 +147,13 @@ struct uart_port {
 	void			(*handle_break)(struct uart_port *);
 	int			(*rs485_config)(struct uart_port *,
 						struct serial_rs485 *rs485);
-	unsigned int		irq;			/* irq number */
+	unsigned int		irq;			/* irq number */	// 中断号
 	unsigned long		irqflags;		/* irq flags  */
-	unsigned int		uartclk;		/* base uart clock */
-	unsigned int		fifosize;		/* tx fifo size */
-	unsigned char		x_char;			/* xon/xoff char */
-	unsigned char		regshift;		/* reg offset shift */
-	unsigned char		iotype;			/* io access style */
+	unsigned int		uartclk;		/* base uart clock */	// 串口时钟
+	unsigned int		fifosize;		/* tx fifo size */		// 串口 FIFO 缓冲大小
+	unsigned char		x_char;			/* xon/xoff char */		// xon / xoff 字符
+	unsigned char		regshift;		/* reg offset shift */	// 寄存器位移
+	unsigned char		iotype;			/* io access style */	// IO 访问方式
 	unsigned char		quirks;			/* internal quirks */
 
 #define UPIO_PORT		(SERIAL_IO_PORT)	/* 8b I/O port access */
@@ -169,6 +172,10 @@ struct uart_port {
 	unsigned int		ignore_status_mask;	/* driver specific */
 	struct uart_state	*state;			/* pointer to parent state */
 	struct uart_icount	icount;			/* statistics */
+	// 计数器
+	// uart_icount：串口信息计数器
+	// 包含了发送字符计数、接收字符技术
+	// 在串口的发送中断处理函数、和接收中断处理函数中，我们需要管理这些计数
 
 	struct console		*cons;			/* struct console, if any */
 #if defined(CONFIG_SERIAL_CORE_CONSOLE) || defined(SUPPORT_SYSRQ)
@@ -243,16 +250,16 @@ struct uart_port {
 #define UPSTAT_SYNC_FIFO	((__force upstat_t) (1 << 5))
 
 	int			hw_stopped;		/* sw-assisted CTS flow state */
-	unsigned int		mctrl;			/* current modem ctrl settings */
+	unsigned int		mctrl;			/* current modem ctrl settings */	// 当前的 moden 设置
 	unsigned int		timeout;		/* character-based timeout */
-	unsigned int		type;			/* port type */
-	const struct uart_ops	*ops;
+	unsigned int		type;			/* port type */	// 端口类型
+	const struct uart_ops	*ops;		// 串口端口操作函数集
 	unsigned int		custom_divisor;
-	unsigned int		line;			/* port index */
+	unsigned int		line;			/* port index */	// 端口索引
 	unsigned int		minor;
-	resource_size_t		mapbase;		/* for ioremap */
+	resource_size_t		mapbase;		/* for ioremap */		// IO 内存物理基地址，可用于 ioremap
 	resource_size_t		mapsize;
-	struct device		*dev;			/* parent device */
+	struct device		*dev;			/* parent device */		// 父设备
 	unsigned char		hub6;			/* this should be in the 8250 driver */
 	unsigned char		suspended;
 	unsigned char		unused[2];
@@ -261,6 +268,7 @@ struct uart_port {
 	const struct attribute_group **tty_groups;	/* all attributes (serial core use only) */
 	struct serial_rs485     rs485;
 	void			*private_data;		/* generic platform data pointer */
+					// 私有数据，一般为 platform 数据指针
 };
 
 static inline int serial_port_in(struct uart_port *up, int offset)
@@ -310,19 +318,19 @@ struct tty_driver;
 
 struct uart_driver {
 	struct module		*owner;
-	const char		*driver_name;
-	const char		*dev_name;
+	const char		*driver_name;	// 串口驱动名
+	const char		*dev_name;		// 串口设备名
 	int			 major;
 	int			 minor;
-	int			 nr;
+	int			 nr;		// 该 uart_driver 支持的串口最大个数
 	struct console		*cons;
-
 	/*
 	 * these are private; the low level driver should not
 	 * touch these; they should be initialised to NULL
 	 */
 	struct uart_state	*state;
-	struct tty_driver	*tty_driver;
+	struct tty_driver	*tty_driver;		// uart_driver 封装了 tty_driver
+											// 底层 uart 驱动不用关心 tty_driver
 };
 
 void uart_write_wakeup(struct uart_port *port);

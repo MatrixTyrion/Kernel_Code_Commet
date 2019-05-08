@@ -296,6 +296,8 @@ static bool populate_node(const void *blob,
 
 	allocl = ++l;
 
+	// 首先为当前节点申请内存空间
+	// 使用 of_node_init 对 node 进行初始化
 	np = unflatten_dt_alloc(mem, sizeof(struct device_node) + allocl,
 				__alignof__(struct device_node));
 	if (!dryrun) {
@@ -388,6 +390,7 @@ static int unflatten_dt_nodes(const void *blob,
 	root = dad;
 	nps[depth] = dad;
 
+	// 该函数主要作用就是从根节点开始，对子节点依次调用 populate_node
 	for (offset = 0;
 	     offset >= 0 && depth >= initial_depth;
 	     offset = fdt_next_node(blob, offset, &depth)) {
@@ -468,27 +471,38 @@ void *__unflatten_device_tree(const void *blob,
 	}
 
 	/* First pass, scan for size */
-	// 第一次传入，mem 和 nodepp 传入 0，实际上是为了计算整个书背书所要的空间
+	// 第一次传入，mem 和 nodepp 传入 0，实际上是为了计算整个设备树所要的空间
 	size = unflatten_dt_nodes(blob, NULL, dad, NULL);
 	if (size < 0)
 		return NULL;
+	/* unflatten_dt_nodes
+	 * 该函数在 __unflatten_device_tree 中调用两次
+	 * 第一次扫描得出设备树转换成 device node 所需要的空间，然后系统申请内存空间
+	 * 第二次就是进行真正的解析工作了
+	 */
 
 	size = ALIGN(size, 4);
 	pr_debug("  size is %d, allocating...\n", size);
 
 	/* Allocate memory for the expanded device tree */
 	// 为设备树分配内存空间
+	// dt_alloc = early_init_dt_alloc_memory_arch()
 	mem = dt_alloc(size + 4, __alignof__(struct device_node));
 	if (!mem)
 		return NULL;
 
 	memset(mem, 0, size);
-
+	// 设备树结束处赋值 0xdeadbeef，为了后面检查是否由数据溢出
 	*(__be32 *)(mem + size) = cpu_to_be32(0xdeadbeef);
 
 	pr_debug("  unflattening %p...\n", mem);
 
 	/* Second pass, do actual unflattening */
+	// blob：设备树存放首地址
+	// mem：为设备树分配的内存空间
+	// dad：父节点，初始值为 NULL
+	// mynodes：of_root 全局链表
+	// ==> 生成整个设备树
 	unflatten_dt_nodes(blob, mem, dad, mynodes);
 	if (be32_to_cpup(mem + size) != 0xdeadbeef)
 		pr_warning("End of tree marker overwritten: %08x\n",
